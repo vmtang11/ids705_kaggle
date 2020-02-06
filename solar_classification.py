@@ -60,6 +60,17 @@ def preprocess_and_extract_features(data):
     Preprocess: normalize, scale, repair
     Extract features: transformations and dimensionality reduction
     '''
+    # relative luminance
+    lum = []
+    for i in data:
+        r_lum = i[:,:,0] * 0.2126
+        g_lum = i[:,:,1] * 0.7152
+        b_lum = i[:,:,2] * 0.0722
+        img_lum = np.stack((r_lum, g_lum, b_lum), axis = -1)
+        lum.append(img_lum)
+    
+    data = np.asarray(lum)
+    
     # Here, we do something trivially simple: we take the average of the RGB
     # values to produce a grey image, transform that into a vector, then
     # extract the mean and standard deviation as features.
@@ -83,7 +94,7 @@ def set_classifier():
     '''Shared function to select the classifier for both performance evaluation
     and testing
     '''
-    return KNeighborsClassifier(n_neighbors=7)
+    return KNeighborsClassifier(n_neighbors=75)
 
 def cv_performance_assessment(X,y,k,clf):
     '''Cross validated performance assessment
