@@ -19,6 +19,9 @@ import sklearn.metrics as metrics
 from skimage.feature import hog
 import cv2
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+
 plt.close()
 
 '''
@@ -64,55 +67,26 @@ def preprocess_and_extract_features(data):
     Preprocess: normalize, scale, repair
     Extract features: transformations and dimensionality reduction
     '''
-    # Here, we do something trivially simple: we take the average of the RGB
-    # values to produce a grey image, transform that into a vector, then
-    # extract the mean and standard deviation as features.
-    
-    threshed = []
-    corn = []
+    new_data = []
 
     for i in data:
-        grayimg = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(grayimg,125,200)
-        ret,thresh = cv2.threshold(edges,127,255,cv2.THRESH_BINARY_INV)
-        
-        corners = cv2.goodFeaturesToTrack(grayimg,25,0.01,10)
-        corners = np.int0(corners)
-        corn.append(corners)
+        grayimg = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY) # .833
                 
-#         adaptive_thresh = cv2.adaptiveThreshold(edges,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
-
-        threshed.append(thresh)
+        new_data.append(grayimg)
         
-    data = np.asarray(threshed)
+    new_data = np.array(new_data)
     
-#     plt.imshow(threshed[0],'gray')
-#     plt.imshow(threshed[1],'gray')
-#     plt.show()
-    
-    # Vectorize the grayscale matrices
-    vectorized_data = data.reshape(data.shape[0],-1)
-    
-    # extract the mean and standard deviation of each sample as features
-    feature_mean = np.mean(vectorized_data,axis=1)
-    feature_std  = np.std(vectorized_data,axis=1) 
-    vec = vectorized_data.copy()
-    feature_min  = np.min(vec,axis=1)
-    feature_max  = np.max(vec,axis=1)
+    data_hog=[]
+    for d in new_data:
+         data_hog.append(hog(d,orientations=15, transform_sqrt=True, pixels_per_cell=(16, 16),cells_per_block=(2,2)))
 
-    feature_q1 = np.quantile(vec,0.03,axis=1)
-    feature_q2 = np.quantile(vec,0.04,axis=1)
-    
-    # Combine the extracted features into a single feature vector
-    features = np.stack((feature_mean, feature_std, feature_min, feature_max),axis=-1)#
-
-    return features
+    return data_hog
 
 def set_classifier():
     '''Shared function to select the classifier for both performance evaluation
     and testing
     '''
-    return SVC(gamma='scale', probability = True, C = 0.01)
+    return SVC(gamma='scale', probability = True, C = 10)
 
 def cv_performance_assessment(X,y,k,clf):
     '''Cross validated performance assessment
@@ -136,12 +110,12 @@ def cv_performance_assessment(X,y,k,clf):
         y_train          = y[train_index]
         
         # Train the classifier
-        X_train_features = preprocess_and_extract_features(X_train)
-        clf              = clf.fit(X_train_features,y_train)
+#         X_train_features = preprocess_and_extract_features(X_train)
+        clf              = clf.fit(X_train,y_train)
         
         # Test the classifier on the validation data for this fold
-        X_val_features   = preprocess_and_extract_features(X_val)
-        cpred            = clf.predict_proba(X_val_features)
+#         X_val_features   = preprocess_and_extract_features(X_val)
+        cpred            = clf.predict_proba(X_val)
         
         # Save the predictions for this fold
         prediction_scores[val_index] = cpred[:,1]
@@ -161,25 +135,42 @@ def plot_roc(labels, prediction_scores):
     plt.legend()
     plt.tight_layout()
 
-
 '''
 Sample script for cross validated performance
 '''
 # Set parameters for the analysis
-num_training_folds = 20
+num_training_folds = 10
 
 # Load the data
 data, labels = load_data(dir_train_images, dir_train_labels, training=True)
+data = preprocess_and_extract_features(data)
+
+data_test, ids_test = load_data(dir_test_images, dir_test_ids, training=False)
+data_test = preprocess_and_extract_features(data_test)
+        
+# pca
+scaler = StandardScaler()
+
+# Fit on training set only.
+scaler.fit(data)
+
+# Apply transform to both the training set and the test set.
+data_hog = scaler.transform(data)
+data_hog_test = scaler.transform(data_test)
+
+pca = PCA(.85)
+pca.fit(data)
+data_hog = pca.transform(data)
+data_hog_test = pca.transform(data_test)
 
 # Choose which classifier to use
 clf = set_classifier()
 
 # Perform cross validated performance assessment
-prediction_scores = cv_performance_assessment(data,labels,num_training_folds,clf)
+prediction_scores = cv_performance_assessment(np.array(data),labels,num_training_folds,clf)
 
 # Compute and plot the ROC curves
 plot_roc(labels, prediction_scores)
-
 
 '''
 Sample script for producing a Kaggle submission
@@ -192,12 +183,12 @@ if produce_submission:
     training_data, training_labels = load_data(dir_train_images, dir_train_labels, training=True)
     training_features              = preprocess_and_extract_features(training_data)
     clf                            = set_classifier()
-    clf.fit(training_features,training_labels)
+    clf.fit(np.array(data_hog),training_labels)
 
     # Load the test data and test the classifier
     test_data, ids = load_data(dir_test_images, dir_test_ids, training=False)
     test_features  = preprocess_and_extract_features(test_data)
-    test_scores    = clf.predict_proba(test_features)[:,1]
+    test_scores    = clf.predict_proba(np.array(data_test))[:,1]
 
     # Save the predictions to a CSV file for upload to Kaggle
     submission_file = pd.DataFrame({'id':    ids,
@@ -206,4 +197,41 @@ if produce_submission:
                            columns=['id','score'],
                            index=False)
 
+'''
+For testing image preprocessing
+'''
 
+data, labels = load_data(dir_train_images, dir_train_labels, training=True)
+
+grayimg = cv2.cvtColor(data[2], cv2.COLOR_BGR2GRAY)
+ret,bin_thresh_inv = cv2.threshold(grayimg,125,255,cv2.THRESH_BINARY_INV)
+edges = cv2.Canny(grayimg,125,200)
+adaptive_thresh = cv2.adaptiveThreshold(grayimg,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
+
+blur = cv2.GaussianBlur(grayimg,(5,5),0)
+ret3,thresh_blur = cv2.threshold(blur,225,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+dst0 = cv2.addWeighted(grayimg,0.7,bin_thresh_inv,0.3,0)
+dst1 = cv2.addWeighted(dst0,0.7,th3,0.3,0)
+
+dft = cv2.dft(np.float32(grayimg),flags = cv2.DFT_COMPLEX_OUTPUT)
+dft_shift = np.fft.fftshift(dft)
+
+magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
+
+rows, cols = grayimg.shape
+crow,ccol = round(rows/2) , round(cols/2)
+
+# create a mask first, center square is 1, remaining all zeros
+mask = np.zeros((rows,cols,2),np.uint8)
+mask[crow-30:crow+30, ccol-30:ccol+30] = 1
+
+# apply mask and inverse DFT
+fshift = dft_shift*mask
+f_ishift = np.fft.ifftshift(fshift)
+img_back = cv2.idft(f_ishift)
+img_back = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
+plt.imshow(img_back)
+
+plt.imshow(dst0)
+plt.imshow(dst1)
