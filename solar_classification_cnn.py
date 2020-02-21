@@ -59,12 +59,6 @@ def load_data(dir_data, dir_labels, training=True):
         
 from skimage.feature import hog
 
-def preprocess_and_extract_features(data):
-    '''Preprocess data and extract features
-    
-    Preprocess: normalize, scale, repair
-    Extract features: transformations and dimensionality reduction
-    '''
     # relative luminance
 #     lum = []
 #     for i in data:
@@ -73,34 +67,27 @@ def preprocess_and_extract_features(data):
 #         b_lum = i[:,:,2] * 0.0722
 #         img_lum = np.stack((r_lum, g_lum, b_lum), axis = -1)
 #         lum.append(img_lum)
-    
-#     data = np.asarray(lum)
-    
-    # Here, we do something trivially simple: we take the average of the RGB
-    # values to produce a grey image, transform that into a vector, then
-    # extract the mean and standard deviation as features.
-    
-    # Make the image grayscale
-#     data = np.mean(data, axis=3)
-    
-#     # Vectorize the grayscale matrices
-#     vectorized_data = data.reshape(data.shape[0],-1)
-    
-#     # extract the mean and standard deviation of each sample as features
-#     feature_mean = np.mean(vectorized_data,axis=1)
-#     feature_std  = np.std(vectorized_data,axis=1)
-    
-#     # Combine the extracted features into a single feature vector
-#     features = np.stack((feature_mean,feature_std),axis=-1)
 
-#     thresh = []
-#     for img in data:
-#         grayimg = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-# #         th3 = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
-#         th3 = cv2.adaptiveThreshold(grayimg, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 115, 1)
-#         thresh.append(th3)
+def preprocess_and_extract_features(data):
+    '''Preprocess data and extract features
     
-    return data
+    Preprocess: normalize, scale, repair
+    Extract features: transformations and dimensionality reduction
+    '''
+    new_data = []
+
+    for i in data:
+        grayimg = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY) # .833
+                
+        new_data.append(grayimg)
+        
+    new_data = np.array(new_data)
+    
+    data_hog=[]
+    for d in new_data:
+         data_hog.append(hog(d,orientations=15, transform_sqrt=True, pixels_per_cell=(16, 16),cells_per_block=(2,2)))
+
+    return data_hog
  
 from keras import layers, models, utils, preprocessing, optimizers
 from keras import backend as K
