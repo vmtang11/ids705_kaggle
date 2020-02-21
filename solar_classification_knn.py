@@ -68,51 +68,51 @@ def preprocess_and_extract_features(data):
     # values to produce a grey image, transform that into a vector, then
     # extract the mean and standard deviation as features.
     
-    threshed = []
+    new_data = []
     corn = []
 
     for i in data:
         grayimg = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(grayimg,125,200)
-        ret,thresh = cv2.threshold(edges,127,255,cv2.THRESH_BINARY_INV)
+#         edges = cv2.Canny(grayimg,125,200)
+#         ret,thresh = cv2.threshold(edges,127,255,cv2.THRESH_BINARY_INV)
         
-        corners = cv2.goodFeaturesToTrack(grayimg,25,0.01,10)
-        corners = np.int0(corners)
-        corn.append(corners)
+#         corners = cv2.goodFeaturesToTrack(grayimg,25,0.01,10)
+#         corners = np.int0(corners)
+#         corn.append(corners)
                 
 #         adaptive_thresh = cv2.adaptiveThreshold(edges,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
 
-        threshed.append(thresh)
-        
-    data = np.asarray(threshed)
+        new_data.append(grayimg)
     
-#     plt.imshow(threshed[0],'gray')
-#     plt.imshow(threshed[1],'gray')
-#     plt.show()
+    new_data = np.asarray(new_data)
     
-    # Vectorize the grayscale matrices
-    vectorized_data = data.reshape(data.shape[0],-1)
+    data_hog=[]
+    for d in new_data:
+         data_hog.append(hog(d,orientations=15, transform_sqrt=True, pixels_per_cell=(16, 16),cells_per_block=(2,2)))
     
-    # extract the mean and standard deviation of each sample as features
-    feature_mean = np.mean(vectorized_data,axis=1)
-    feature_std  = np.std(vectorized_data,axis=1) 
-    vec = vectorized_data.copy()
-    feature_min  = np.min(vec,axis=1)
-    feature_max  = np.max(vec,axis=1)
+#     # Vectorize the grayscale matrices
+#     vectorized_data = data.reshape(data.shape[0],-1)
+    
+#     # extract the mean and standard deviation of each sample as features
+#     feature_mean = np.mean(vectorized_data,axis=1)
+#     feature_std  = np.std(vectorized_data,axis=1) 
+#     vec = vectorized_data.copy()
+#     feature_min  = np.min(vec,axis=1)
+#     feature_max  = np.max(vec,axis=1)
 
-    feature_q1 = np.quantile(vec,0.03,axis=1)
-    feature_q2 = np.quantile(vec,0.04,axis=1)
+#     feature_q1 = np.quantile(vec,0.03,axis=1)
+#     feature_q2 = np.quantile(vec,0.04,axis=1)
     
-    # Combine the extracted features into a single feature vector
-    features = np.stack((feature_mean, feature_std, feature_min, feature_max),axis=-1)#
+#     # Combine the extracted features into a single feature vector
+#     features = np.stack((feature_mean, feature_std, feature_min, feature_max),axis=-1)#
 
-    return features
+    return data_hog
 
 def set_classifier():
     '''Shared function to select the classifier for both performance evaluation
     and testing
     '''
-    return KNeighborsClassifier(n_neighbors=32)
+    return KNeighborsClassifier(n_neighbors=30)
 
 def cv_performance_assessment(X,y,k,clf):
     '''Cross validated performance assessment
@@ -166,7 +166,7 @@ def plot_roc(labels, prediction_scores):
 Sample script for cross validated performance
 '''
 # Set parameters for the analysis
-num_training_folds = 20
+num_training_folds = 5
 
 # Load the data
 data, labels = load_data(dir_train_images, dir_train_labels, training=True)
