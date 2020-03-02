@@ -75,7 +75,7 @@ def preprocess_and_extract_features(data):
         new_data.append(grayimg)
         
     new_data = np.array(new_data)
-    
+        
     data_hog=[]
     for d in new_data:
          data_hog.append(hog(d,orientations=15, transform_sqrt=True, pixels_per_cell=(16, 16),cells_per_block=(2,2)))
@@ -172,6 +172,9 @@ prediction_scores = cv_performance_assessment(np.array(data),labels,num_training
 # Compute and plot the ROC curves
 plot_roc(labels, prediction_scores)
 
+# np.savetxt('svm_scores.csv', prediction_scores, delimiter=',')
+pd.DataFrame(prediction_scores).to_csv("svm_scores.csv")
+
 '''
 Sample script for producing a Kaggle submission
 '''
@@ -201,37 +204,35 @@ if produce_submission:
 For testing image preprocessing
 '''
 
-data, labels = load_data(dir_train_images, dir_train_labels, training=True)
+# data, labels = load_data(dir_train_images, dir_train_labels, training=True)
 
-grayimg = cv2.cvtColor(data[2], cv2.COLOR_BGR2GRAY)
-ret,bin_thresh_inv = cv2.threshold(grayimg,125,255,cv2.THRESH_BINARY_INV)
-edges = cv2.Canny(grayimg,125,200)
-adaptive_thresh = cv2.adaptiveThreshold(grayimg,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
+# grayimg = cv2.cvtColor(data[2], cv2.COLOR_BGR2GRAY)
+# ret,bin_thresh_inv = cv2.threshold(grayimg,125,255,cv2.THRESH_BINARY_INV)
+# edges = cv2.Canny(grayimg,125,200)
+# adaptive_thresh = cv2.adaptiveThreshold(grayimg,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
 
-blur = cv2.GaussianBlur(grayimg,(5,5),0)
-ret3,thresh_blur = cv2.threshold(blur,225,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+# blur = cv2.GaussianBlur(grayimg,(5,5),0)
+# ret3,thresh_blur = cv2.threshold(blur,225,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
-dst0 = cv2.addWeighted(grayimg,0.7,bin_thresh_inv,0.3,0)
-dst1 = cv2.addWeighted(dst0,0.7,th3,0.3,0)
+# dst0 = cv2.addWeighted(grayimg,0.7,bin_thresh_inv,0.3,0)
+# dst1 = cv2.addWeighted(dst0,0.7,thresh_blur,0.3,0)
 
-dft = cv2.dft(np.float32(grayimg),flags = cv2.DFT_COMPLEX_OUTPUT)
-dft_shift = np.fft.fftshift(dft)
+# dft = cv2.dft(np.float32(grayimg),flags = cv2.DFT_COMPLEX_OUTPUT)
+# dft_shift = np.fft.fftshift(dft)
 
-magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
+# magnitude_spectrum = 20*np.log(cv2.magnitude(dft_shift[:,:,0],dft_shift[:,:,1]))
 
-rows, cols = grayimg.shape
-crow,ccol = round(rows/2) , round(cols/2)
+# rows, cols = grayimg.shape
+# crow,ccol = round(rows/2) , round(cols/2)
 
-# create a mask first, center square is 1, remaining all zeros
-mask = np.zeros((rows,cols,2),np.uint8)
-mask[crow-30:crow+30, ccol-30:ccol+30] = 1
+# # create a mask first, center square is 1, remaining all zeros
+# mask = np.zeros((rows,cols,2),np.uint8)
+# mask[crow-30:crow+30, ccol-30:ccol+30] = 1
 
-# apply mask and inverse DFT
-fshift = dft_shift*mask
-f_ishift = np.fft.ifftshift(fshift)
-img_back = cv2.idft(f_ishift)
-img_back = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
-plt.imshow(img_back)
+# # apply mask and inverse DFT
+# fshift = dft_shift*mask
+# f_ishift = np.fft.ifftshift(fshift)
+# img_back = cv2.idft(f_ishift)
+# img_back = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
 
-plt.imshow(dst0)
-plt.imshow(dst1)
+# plt.imshow(img_back)
