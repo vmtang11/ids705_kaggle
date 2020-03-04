@@ -200,18 +200,28 @@ if produce_submission:
 
 '''
 For testing image preprocessing
+Most methods did not improve AUC
 '''
 
 # data, labels = load_data(dir_train_images, dir_train_labels, training=True)
 
+# grayscale 
 # grayimg = cv2.cvtColor(data[2], cv2.COLOR_BGR2GRAY)
+
+# binary thresholding 
 # ret,bin_thresh_inv = cv2.threshold(grayimg,125,255,cv2.THRESH_BINARY_INV)
-# edges = cv2.Canny(grayimg,125,200)
+
+# adaptive thresholding
 # adaptive_thresh = cv2.adaptiveThreshold(grayimg,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY_INV,5,2)
 
+# canny edge detection
+# edges = cv2.Canny(grayimg,125,200)
+
+# image blurring
 # blur = cv2.GaussianBlur(grayimg,(5,5),0)
 # ret3,thresh_blur = cv2.threshold(blur,225,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
+# image blending
 # dst0 = cv2.addWeighted(grayimg,0.7,bin_thresh_inv,0.3,0)
 # dst1 = cv2.addWeighted(dst0,0.7,thresh_blur,0.3,0)
 
@@ -233,4 +243,6 @@ For testing image preprocessing
 # img_back = cv2.idft(f_ishift)
 # img_back = cv2.magnitude(img_back[:,:,0],img_back[:,:,1])
 
+# visualize images
+# plt.axis('off')
 # plt.imshow(img_back)
