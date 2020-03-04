@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 import sklearn.metrics as metrics
 from skimage.feature import hog
@@ -108,16 +108,8 @@ def cv_performance_assessment(X,y,k,clf):
         # Extract the training and validation data for this fold
         X_train, X_val   = X[train_index], X[val_index]
         y_train          = y[train_index]
-        
-        # Train the classifier
-#         X_train_features = preprocess_and_extract_features(X_train)
         clf              = clf.fit(X_train,y_train)
-        
-        # Test the classifier on the validation data for this fold
-#         X_val_features   = preprocess_and_extract_features(X_val)
-        cpred            = clf.predict_proba(X_val)
-        
-        # Save the predictions for this fold
+        cpred            = clf.predict_proba(X_test)
         prediction_scores[val_index] = cpred[:,1]
     return prediction_scores
 
@@ -139,7 +131,7 @@ def plot_roc(labels, prediction_scores):
 Sample script for cross validated performance
 '''
 # Set parameters for the analysis
-num_training_folds = 10
+# num_training_folds = 10
 
 # Load the data
 data, labels = load_data(dir_train_images, dir_train_labels, training=True)
@@ -164,15 +156,25 @@ data_hog = pca.transform(data)
 data_hog_test = pca.transform(data_test)
 
 # Choose which classifier to use
-clf = set_classifier()
+# clf = set_classifier()
 
 # Perform cross validated performance assessment
-prediction_scores = cv_performance_assessment(np.array(data),labels,num_training_folds,clf)
+# prediction_scores = cv_performance_assessment(np.array(data),labels,num_training_folds,clf)
 
-# Compute and plot the ROC curves
-plot_roc(labels, prediction_scores)
+# # Compute and plot the ROC curves
+# plot_roc(labels, prediction_scores)
 
-# np.savetxt('svm_scores.csv', prediction_scores, delimiter=',')
+# train test split
+X_train, X_val, y_train, y_val = train_test_split(data_hog, labels, test_size=0.3, random_state=23)
+
+# Train the classifier
+clf              = clf.fit(X_train,y_train)
+        
+# Test the classifier on the validation data for this fold
+prediction_scores = clf.predict_proba(X_val)[:,1]
+
+plot_roc(y_val, prediction_scores)
+
 pd.DataFrame(prediction_scores).to_csv("svm_scores.csv")
 
 '''
