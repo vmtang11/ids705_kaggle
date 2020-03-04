@@ -46,7 +46,9 @@ X_train, X_val, y_train, y_val, idx_train, idx_val = train_test_split(X_train, y
 y_train_cnn = keras.utils.to_categorical(y_train, num_classes = 2)
 y_val_cnn = keras.utils.to_categorical(y_val, num_classes = 2)
 
-### ROC Curves ###
+'''
+ROC Curves
+'''
 
 # load cnn
 cnn_filename = 'cnn_5d400_1000e_4e4lrdecay_wbest.sav'
@@ -90,7 +92,9 @@ plt.legend(loc = 'lower right')
 plt.savefig('roc.png')
 plt.show()
 
-### Precision Recall Curves ###
+'''
+PR Curves
+'''
 
 # cnn
 prec_cnn, recall_cnn, t_cnn = precision_recall_curve(y_val_cnn.ravel(), cnn_scores_auc)
@@ -113,7 +117,9 @@ plt.legend(loc = 'lower left')
 plt.savefig('pr.png')
 plt.show()
 
-########################
+'''
+Confusion Matrix
+'''
 
 ### SVM ###
 # fn: predict 0 but actually 1
