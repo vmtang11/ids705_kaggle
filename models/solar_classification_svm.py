@@ -155,26 +155,22 @@ pca.fit(data)
 data_hog = pca.transform(data)
 data_hog_test = pca.transform(data_test)
 
-# Choose which classifier to use
+'''
+Cross validation
+'''
 # clf = set_classifier()
-
-# Perform cross validated performance assessment
 # prediction_scores = cv_performance_assessment(np.array(data),labels,num_training_folds,clf)
-
-# # Compute and plot the ROC curves
 # plot_roc(labels, prediction_scores)
 
-# train test split
+'''
+Train Test Split
+'''
 X_train, X_val, y_train, y_val = train_test_split(data_hog, labels, test_size=0.3, random_state=23)
-
-# Train the classifier
-clf              = clf.fit(X_train,y_train)
-        
-# Test the classifier on the validation data for this fold
+clf               = clf.fit(X_train,y_train)
 prediction_scores = clf.predict_proba(X_val)[:,1]
-
 plot_roc(y_val, prediction_scores)
 
+# save to csv for results
 pd.DataFrame(prediction_scores).to_csv("svm_scores.csv")
 
 '''
